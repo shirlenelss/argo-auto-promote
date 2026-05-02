@@ -8,9 +8,9 @@ spec:
     - list:
         elements:
           - env: dev
-            namespace: sample-app-dev
+            namespace: sample-dev
           - env: stage
-            namespace: sample-app-stage
+            namespace: sample-stage
   template:
     metadata:
       name: "sample-app-{{env}}"

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-b-app
+  labels:
+    app: service-b-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-b-app
+  template:
+    metadata:
+      labels:
+        app: service-b-app
+    spec:
+      containers:
+        - name: service-b-app
+          image: nginx:1.25.0
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

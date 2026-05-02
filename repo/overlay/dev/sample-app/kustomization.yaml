@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: sample-app-dev
 
 resources:
-  - ../../base/sample-app
+  - ../../../base/sample-app
 
 images:
   - name: nginx
