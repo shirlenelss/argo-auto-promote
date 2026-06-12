@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sample-dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sample-stage
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sample-sandbox
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sample-prod
+

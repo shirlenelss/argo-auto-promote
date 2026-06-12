@@ -3,8 +3,11 @@ name: Promote to Stage
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: "Target environment to promote to (stage, sandbox, prod)"
+        required: true
       image_tag:
-        description: "Image tag to promote from dev to stage"
+        description: "Image tag to promote"
         required: true
 
 jobs:
@@ -17,12 +20,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Update stage image tag
+      - name: Validate environment
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          if [[ ! "$ENV" =~ ^(stage|sandbox|prod)$ ]]; then
+            echo "Invalid environment: $ENV"
+            exit 1
+          fi
+
+      - name: Determine version bump
+        id: semver
+        run: |
+          COMMIT_MSG="${{ github.event.inputs.image_tag }}"
+          
+          if [[ "$COMMIT_MSG" == *"feat!"* ]]; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+          elif [[ "$COMMIT_MSG" == *"feat:"* ]]; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+          elif [[ "$COMMIT_MSG" == *"fix:"* ]]; then
+            echo "bump=patch" >> $GITHUB_OUTPUT
+          else
+            echo "bump=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update image tag
         run: |
           TAG="${{ github.event.inputs.image_tag }}"
-          FILE="repo/overlay/stage/kustomization.yaml"
+          ENV="${{ github.event.inputs.environment }}"
+          FILE="repo/overlay/${ENV}/kustomization.yaml"
 
-          # Replace the newTag value for nginx
+          # Replace the newTag value
           sed -i "s|newTag:.*|newTag: \"${TAG}\"|" "$FILE"
 
           echo "Updated $FILE to tag: $TAG"
@@ -32,6 +59,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add repo/overlay/stage/kustomization.yaml
-          git commit -m "promote: stage image tag -> ${{ github.event.inputs.image_tag }}"
+          ENV="${{ github.event.inputs.environment }}"
+          git add repo/overlay/${ENV}/kustomization.yaml
+          git commit -m "promote: $ENV image tag -> ${{ github.event.inputs.image_tag }} [${{ steps.semver.outputs.bump }}]"
           git push

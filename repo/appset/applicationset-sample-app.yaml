@@ -11,6 +11,10 @@ spec:
             namespace: sample-dev
           - env: stage
             namespace: sample-stage
+          - env: sandbox
+            namespace: sample-sandbox
+          - env: prod
+            namespace: sample-prod
   template:
     metadata:
       name: "sample-app-{{env}}"
@@ -31,4 +35,4 @@ spec:
           prune: true
           selfHeal: true
         syncOptions:
-          - CreateNamespace=true
+          - CreateNamespace={{namespace}}
