@@ -6,7 +6,7 @@ metadata:
     app: service-b
 spec:
   selector:
-    app: service-b
+    app: service-b-app
   ports:
     - port: 80
       targetPort: 80

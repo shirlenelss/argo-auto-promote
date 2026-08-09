@@ -22,10 +22,10 @@ spec:
       source:
         repoURL: https://github.com/shirlenelss/argo-auto-promote.git
         targetRevision: main
-        path: "repo/overlay/{{env}}/sample-app"
+        path: "repo/overlay/{{env}}"
       destination:
         server: https://kubernetes.default.svc
-        namespace: "sample-app-{{env}}"
+        namespace: "sample-{{env}}"
       syncPolicy:
         automated:
           prune: true

@@ -17,7 +17,7 @@ hr() { printf '%s\n' "───────────────────�
 
 show_env() {
   local env="$1"
-  kustomize build "$REPO/overlay/$env/sample-app" \
+  kustomize build "$REPO/overlay/$env" \
     | grep -E "^  namespace:|^  replicas:|- image:" \
     | sed 's/^/    /'
 }
@@ -26,14 +26,14 @@ echo "Promoting nginx:$NEW_TAG through: ${ENVS[*]}"
 hr
 echo "STARTING STATE (current pinned tags):"
 for e in "${ENVS[@]}"; do
-  tag=$(grep -A2 'images:' "$REPO/overlay/$e/sample-app/kustomization.yaml" | grep newTag | awk '{print $2}' | tr -d '"')
+  tag=$(grep -A2 'images:' "$REPO/overlay/$e/kustomization.yaml" | grep newTag | awk '{print $2}' | tr -d '"')
   printf "  %-6s -> nginx:%s\n" "$e" "$tag"
 done
 hr
 
 for env in "${ENVS[@]}"; do
   echo ">>> PROMOTE nginx:$NEW_TAG to [$env]"
-  ( cd "$REPO/overlay/$env/sample-app" && kustomize edit set image "nginx=nginx:$NEW_TAG" )
+  ( cd "$REPO/overlay/$env" && kustomize edit set image "nginx=nginx:$NEW_TAG" )
   echo "    rendered manifest for $env:"
   show_env "$env"
   echo "    (in real ArgoCD: commit + push -> app 'sample-app-$env' auto-syncs)"
