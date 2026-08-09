@@ -4,17 +4,18 @@ kind: Kustomization
 namespace: sample-app-stage
 
 resources:
-  - ../../../base/sample-app
+- ../../../base/sample-app
 
 images:
-  - name: nginx
-    newTag: "1.25.0"
+- name: nginx
+  newName: nginx
+  newTag: 1.27.0
 
 patches:
-  - patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 2
-    target:
-      kind: Deployment
-      name: sample-app
+- patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 1
+  target:
+    kind: Deployment
+    name: sample-app

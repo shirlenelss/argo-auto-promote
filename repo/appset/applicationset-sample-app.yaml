@@ -8,13 +8,9 @@ spec:
     - list:
         elements:
           - env: dev
-            namespace: sample-dev
           - env: stage
-            namespace: sample-stage
           - env: sandbox
-            namespace: sample-sandbox
           - env: prod
-            namespace: sample-prod
   template:
     metadata:
       name: "sample-app-{{env}}"
@@ -26,13 +22,13 @@ spec:
       source:
         repoURL: https://github.com/shirlenelss/argo-auto-promote.git
         targetRevision: main
-        path: "repo/overlay/{{env}}"
+        path: "repo/overlay/{{env}}/sample-app"
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{namespace}}"
+        namespace: "sample-app-{{env}}"
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
         syncOptions:
-          - CreateNamespace={{namespace}}
+          - CreateNamespace=true

@@ -1,20 +1,23 @@
+# Namespaces used by the sample-app environments.
+# NOTE: The ApplicationSet uses syncOption CreateNamespace=true, so Argo CD
+# creates these automatically on sync. This file documents them and can be
+# applied manually (kubectl apply -f) if you prefer to pre-create them.
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sample-dev
+  name: sample-app-dev
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sample-stage
+  name: sample-app-stage
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sample-sandbox
+  name: sample-app-sandbox
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: sample-prod
-
+  name: sample-app-prod
