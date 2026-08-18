@@ -19,6 +19,21 @@ spec:
           image: nginx:1.25.0
           ports:
             - containerPort: 80
+          env:
+            # nginx's docker-entrypoint envsubst's *.template files in
+            # /etc/nginx/templates using every env var visible here, writing
+            # the result to NGINX_ENVSUBST_OUTPUT_DIR. IMAGE_TAG's value is
+            # overwritten per overlay by a `replacements` block that reads
+            # it back off this same container's own (already-promoted)
+            # image field, so it never needs to be set by hand.
+            - name: ENVIRONMENT
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: IMAGE_TAG
+              value: unset
+            - name: NGINX_ENVSUBST_OUTPUT_DIR
+              value: /usr/share/nginx/html
           resources:
             requests:
               cpu: 50m
@@ -27,9 +42,9 @@ spec:
               cpu: 100m
               memory: 128Mi
           volumeMounts:
-            - name: html
-              mountPath: /usr/share/nginx/html
+            - name: html-template
+              mountPath: /etc/nginx/templates
       volumes:
-        - name: html
+        - name: html-template
           configMap:
             name: sample-app-html

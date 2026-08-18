@@ -3,12 +3,14 @@ kind: ConfigMap
 metadata:
   name: sample-app-html
 data:
-  index.html: |
+  index.html.template: |
     <!DOCTYPE html>
     <html>
       <head><title>sample-app</title></head>
       <body>
         <h1>sample-app</h1>
+        <p>Environment: ${ENVIRONMENT}</p>
+        <p>Image tag: ${IMAGE_TAG}</p>
         <p>Served by nginx.</p>
       </body>
     </html>

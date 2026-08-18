@@ -13,6 +13,38 @@ images:
   - name: nginx
     newTag: "1.27.0"
 
+# Project each Deployment's own (already-promoted) image tag into its
+# IMAGE_TAG env var, so the served page can display it without the tag
+# being hand-maintained in a second place. Must live in the same file as
+# `images:` above -- it reads the post-image-transform value.
+replacements:
+  - source:
+      kind: Deployment
+      name: sample-app
+      fieldPath: spec.template.spec.containers.[name=sample-app].image
+      options:
+        delimiter: ":"
+        index: 1
+    targets:
+      - select:
+          kind: Deployment
+          name: sample-app
+        fieldPaths:
+          - spec.template.spec.containers.[name=sample-app].env.[name=IMAGE_TAG].value
+  - source:
+      kind: Deployment
+      name: service-b-app
+      fieldPath: spec.template.spec.containers.[name=service-b-app].image
+      options:
+        delimiter: ":"
+        index: 1
+    targets:
+      - select:
+          kind: Deployment
+          name: service-b-app
+        fieldPaths:
+          - spec.template.spec.containers.[name=service-b-app].env.[name=IMAGE_TAG].value
+
 # Each VirtualService gets two hosts: a nip.io one (no real DNS needed) and a
 # real one on the shared "apps.shirlenelim.se" wildcard, so a single DNS
 # record (*.apps.shirlenelim.se -> ingress gateway IP) covers every app/env
