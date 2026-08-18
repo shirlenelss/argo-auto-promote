@@ -24,3 +24,11 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  # istiod injects the CA bundle into this webhook's caBundle at runtime, so it
+  # will always differ from the chart's (empty) rendered value. Without this,
+  # selfHeal fights istiod over the field forever.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
