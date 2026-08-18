@@ -1,0 +1,16 @@
+# Host is a placeholder; overlays patch spec.hosts[0] to the env-specific URL.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: sample-app
+spec:
+  hosts:
+    - sample-app.PLACEHOLDER
+  gateways:
+    - sample-gateway
+  http:
+    - route:
+        - destination:
+            host: sample-app
+            port:
+              number: 80

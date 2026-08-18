@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sample-app-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+      <head><title>sample-app</title></head>
+      <body>
+        <h1>sample-app</h1>
+        <p>Served by nginx.</p>
+      </body>
+    </html>

@@ -7,6 +7,7 @@ namespace: sample-dev
 resources:
   - ../../base/sample-app
   - ../../base/service-b
+  - ../../base/routes
 
 # Both apps use the nginx image, so this pins the system as a unit
 # (system-level promotion). Real apps would have distinct image names
@@ -14,3 +15,21 @@ resources:
 images:
   - name: nginx
     newTag: "1.27.0"
+
+# nip.io resolves without real DNS, against the istio-ingressgateway's IP.
+# Swap 127.0.0.1 for that IP (`kubectl -n istio-system get svc istio-ingressgateway`).
+patches:
+  - target:
+      kind: VirtualService
+      name: sample-app
+    patch: |-
+      - op: replace
+        path: /spec/hosts/0
+        value: sample-app.dev.127.0.0.1.nip.io
+  - target:
+      kind: VirtualService
+      name: service-b
+    patch: |-
+      - op: replace
+        path: /spec/hosts/0
+        value: service-b.dev.127.0.0.1.nip.io
