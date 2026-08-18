@@ -54,20 +54,29 @@ per-environment namespace and pins the system's image tag:
 ### URLs (dev, stage)
 
 `dev` and `stage` overlay `base/routes` (an Istio `Gateway` + one `VirtualService` per
-app) with env-specific `nip.io` hostnames, so each app is reachable through the
-`istio-ingressgateway` installed in [Installing Istio](#installing-istio-helm-via-argo-cd)
-without needing real DNS:
+app), and each `VirtualService` carries two hosts — reachable through the
+`istio-ingressgateway` installed in [Installing Istio](#installing-istio-helm-via-argo-cd):
 
-| Env   | sample-app                              | service-b                              |
-|-------|------------------------------------------|------------------------------------------|
-| dev   | `sample-app.dev.127.0.0.1.nip.io`         | `service-b.dev.127.0.0.1.nip.io`          |
-| stage | `sample-app.stage.127.0.0.1.nip.io`       | `service-b.stage.127.0.0.1.nip.io`        |
+- a **`nip.io`** host, which resolves without any real DNS record;
+- a **real** host on the shared `apps.shirlenelim.se` wildcard — `<app>-<env>.apps.shirlenelim.se`
+  — so every app/env combination is covered by a single DNS record instead of
+  creating a subdomain by hand for each one.
 
-`127.0.0.1` is a placeholder — swap it for the ingress gateway's real address:
+| Env   | sample-app | service-b |
+|-------|------------|-----------|
+| dev   | `sample-app.dev.127.0.0.1.nip.io`<br>`sample-app-dev.apps.shirlenelim.se` | `service-b.dev.127.0.0.1.nip.io`<br>`service-b-dev.apps.shirlenelim.se` |
+| stage | `sample-app.stage.127.0.0.1.nip.io`<br>`sample-app-stage.apps.shirlenelim.se` | `service-b.stage.127.0.0.1.nip.io`<br>`service-b-stage.apps.shirlenelim.se` |
+
+`127.0.0.1` in the `nip.io` host is a placeholder for the ingress gateway's real
+address:
 
 ```bash
 kubectl -n istio-system get svc istio-ingressgateway
 ```
+
+For the `apps.shirlenelim.se` hosts to resolve, create a wildcard DNS record —
+`*.apps.shirlenelim.se` → the same ingress gateway address — with your DNS provider.
+This repo doesn't manage that record; it's outside the cluster.
 
 `sandbox` and `prod` don't include `base/routes`, so they have no external URL yet.
 

@@ -16,8 +16,10 @@ images:
   - name: nginx
     newTag: "1.27.0"
 
-# nip.io resolves without real DNS, against the istio-ingressgateway's IP.
-# Swap 127.0.0.1 for that IP (`kubectl -n istio-system get svc istio-ingressgateway`).
+# Each VirtualService gets two hosts: a nip.io one (no real DNS needed) and a
+# real one on the shared "apps.shirlenelim.se" wildcard, so a single DNS
+# record (*.apps.shirlenelim.se -> ingress gateway IP) covers every app/env
+# combination without creating per-app subdomains by hand.
 patches:
   - target:
       kind: VirtualService
@@ -26,6 +28,9 @@ patches:
       - op: replace
         path: /spec/hosts/0
         value: sample-app.dev.127.0.0.1.nip.io
+      - op: add
+        path: /spec/hosts/-
+        value: sample-app-dev.apps.shirlenelim.se
   - target:
       kind: VirtualService
       name: service-b
@@ -33,3 +38,6 @@ patches:
       - op: replace
         path: /spec/hosts/0
         value: service-b.dev.127.0.0.1.nip.io
+      - op: add
+        path: /spec/hosts/-
+        value: service-b-dev.apps.shirlenelim.se
