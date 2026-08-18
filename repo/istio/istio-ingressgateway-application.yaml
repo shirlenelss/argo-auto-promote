@@ -1,5 +1,11 @@
 # Ingress gateway (the generic "gateway" chart, configured as an ingress).
 # Needs istiod up first, so it syncs last (sync-wave 2).
+#
+# service.type is ClusterIP, not the chart's default LoadBalancer: this
+# cluster already runs Traefik as its ingress controller (owns node ports
+# 80/443 via k3s' svclb), so a second LoadBalancer Service here would just
+# sit at EXTERNAL-IP <pending> forever. Traefik fronts this gateway instead
+# — see routes/ingress.yaml — reaching it over its ClusterIP.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,6 +21,9 @@ spec:
     targetRevision: 1.30.3
     helm:
       releaseName: istio-ingressgateway
+      values: |
+        service:
+          type: ClusterIP
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system

@@ -36,7 +36,9 @@ repo/
   istio/
     istio-base-application.yaml      # Argo CD Application: Istio CRDs (sync-wave 0)
     istiod-application.yaml          # Argo CD Application: control plane (sync-wave 1)
-    istio-ingressgateway-application.yaml  # Argo CD Application: ingress gateway (sync-wave 2)
+    istio-ingressgateway-application.yaml  # Argo CD Application: ingress gateway, ClusterIP (sync-wave 2)
+    sample-routes-ingress-application.yaml # Argo CD Application: Traefik Ingress -> gateway (sync-wave 3)
+    routes/ingress.yaml              # the Traefik Ingress itself
 scripts/
   promote.sh                         # simulate a tag promotion dev → stage → prod
 ```
@@ -54,29 +56,30 @@ per-environment namespace and pins the system's image tag:
 ### URLs (dev, stage)
 
 `dev` and `stage` overlay `base/routes` (an Istio `Gateway` + one `VirtualService` per
-app), and each `VirtualService` carries two hosts — reachable through the
-`istio-ingressgateway` installed in [Installing Istio](#installing-istio-helm-via-argo-cd):
+app), and each `VirtualService` carries two hosts:
 
-- a **`nip.io`** host, which resolves without any real DNS record;
-- a **real** host on the shared `apps.shirlenelim.se` wildcard — `<app>-<env>.apps.shirlenelim.se`
-  — so every app/env combination is covered by a single DNS record instead of
-  creating a subdomain by hand for each one.
+- a **`nip.io`** host, which resolves without any real DNS record — useful for
+  testing straight against `istio-ingressgateway` (e.g. via `kubectl port-forward`),
+  bypassing Traefik;
+- a **real** host on the shared `apps.shirlenelim.se` wildcard — `<app>-<env>.apps.shirlenelim.se`.
 
 | Env   | sample-app | service-b |
 |-------|------------|-----------|
 | dev   | `sample-app.dev.127.0.0.1.nip.io`<br>`sample-app-dev.apps.shirlenelim.se` | `service-b.dev.127.0.0.1.nip.io`<br>`service-b-dev.apps.shirlenelim.se` |
 | stage | `sample-app.stage.127.0.0.1.nip.io`<br>`sample-app-stage.apps.shirlenelim.se` | `service-b.stage.127.0.0.1.nip.io`<br>`service-b-stage.apps.shirlenelim.se` |
 
-`127.0.0.1` in the `nip.io` host is a placeholder for the ingress gateway's real
-address:
+**How the real hosts reach an app:** this cluster already runs Traefik as its
+ingress controller (Rancher Desktop's default, also fronting other workloads like
+Grafana), so `istio-ingressgateway`'s Service is `ClusterIP` — not `LoadBalancer` —
+and `repo/istio/routes/ingress.yaml` is a Traefik `Ingress` for all four
+`apps.shirlenelim.se` hosts, backed by that Service. Traefik forwards by `Host`
+header to the gateway; the gateway's own `VirtualService`s (`base/routes`) route
+that same `Host` to the right app/namespace. A wildcard DNS record
+(`*.apps.shirlenelim.se` → Traefik's external address) or an `/etc/hosts` entry per
+host makes them resolve — this repo doesn't manage that; it's outside the cluster.
 
-```bash
-kubectl -n istio-system get svc istio-ingressgateway
-```
-
-For the `apps.shirlenelim.se` hosts to resolve, create a wildcard DNS record —
-`*.apps.shirlenelim.se` → the same ingress gateway address — with your DNS provider.
-This repo doesn't manage that record; it's outside the cluster.
+`127.0.0.1` in the `nip.io` host is a placeholder for the gateway's ClusterIP, only
+reachable via `kubectl port-forward svc/istio-ingressgateway -n istio-system <port>:80`.
 
 `sandbox` and `prod` don't include `base/routes`, so they have no external URL yet.
 
