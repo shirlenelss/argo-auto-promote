@@ -112,10 +112,27 @@ It prints the starting tags, promotes dev → stage → prod, shows the rendered
 of the overlay changes. In real Argo CD, committing those overlay changes is what
 triggers each `sample-app-<env>` Application to sync.
 
-To reset the overlays after a simulation:
+Each promotion step also "pushes" to a **simulated registry** —
+`scripts/registry.txt`, gitignored — recording the real image alongside a
+per-environment, per-push tag (`dev-v1.0.0`, `dev-v1.0.1`, `stage-v1.0.0`, ...).
+The counter is derived from how many entries that env already has, so it keeps
+climbing across runs:
+
+```
+nginx:1.28.0 dev-v1.0.0 2026-08-18T19:17:40Z
+nginx:1.28.0 stage-v1.0.0 2026-08-18T19:17:40Z
+nginx:1.28.0 prod-v1.0.0 2026-08-18T19:17:40Z
+```
+
+Each `[registry] env=... image=... tag=...` line printed during a run, and the
+full simulated registry dumped at the end, show which environment got which
+simulated version.
+
+To reset the overlays and the simulated registry after a simulation:
 
 ```bash
 git checkout repo/overlay
+rm -f scripts/registry.txt
 ```
 
 ## Render an environment manually
