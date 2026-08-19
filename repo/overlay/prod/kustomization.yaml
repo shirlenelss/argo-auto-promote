@@ -10,9 +10,9 @@ resources:
 
 images:
   - name: service-a
-    newTag: "0.0.1"
+    newTag: "PROD-v1.0.0"
   - name: service-b
-    newTag: "0.0.1"
+    newTag: "PROD-v1.0.0"
 
 # Project each Deployment's own (already-promoted) image tag into its
 # IMAGE_TAG env var, so the served page can display it without the tag
