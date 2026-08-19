@@ -12,5 +12,35 @@ data:
         <p>Environment: ${ENVIRONMENT}</p>
         <p>Image tag: ${IMAGE_TAG}</p>
         <p>Served by nginx.</p>
+        <hr>
+        <p>Called service-b:</p>
+        <div class="service-b-response">
+          <!--#include virtual="/upstream/service-b" -->
+        </div>
       </body>
     </html>
+  # Overrides the image's default server block: adds `ssi on` so the
+  # include above is processed, and an internal-only location that
+  # proxies to the service-b Service (same namespace, so the bare name
+  # resolves via cluster DNS -- no need to know/template the namespace).
+  default.conf: |
+    server {
+      listen 80;
+      server_name localhost;
+
+      location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        ssi on;
+      }
+
+      location = /upstream/service-b {
+        internal;
+        proxy_pass http://service-b/;
+      }
+
+      error_page 500 502 503 504 /50x.html;
+      location = /50x.html {
+        root /usr/share/nginx/html;
+      }
+    }
