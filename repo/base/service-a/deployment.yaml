@@ -16,38 +16,28 @@ spec:
     spec:
       containers:
         - name: service-a-app
-          image: nginx:1.25.0
+          image: service-a:0.0.1
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           env:
-            # nginx's docker-entrypoint envsubst's *.template files in
-            # /etc/nginx/templates using every env var visible here, writing
-            # the result to NGINX_ENVSUBST_OUTPUT_DIR. IMAGE_TAG's value is
-            # overwritten per overlay by a `replacements` block that reads
-            # it back off this same container's own (already-promoted)
-            # image field, so it never needs to be set by hand.
+            # IMAGE_TAG's value is overwritten per overlay by a
+            # `replacements` block that reads it back off this same
+            # container's own (already-promoted) image field, so it
+            # never needs to be set by hand.
             - name: ENVIRONMENT
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: IMAGE_TAG
               value: unset
-            - name: NGINX_ENVSUBST_OUTPUT_DIR
-              value: /usr/share/nginx/html
+            # Bare Service name resolves via cluster DNS within the same
+            # namespace, so no per-env templating is needed here.
+            - name: SERVICE_B_URL
+              value: http://service-b
           resources:
             requests:
               cpu: 50m
               memory: 64Mi
             limits:
-              cpu: 100m
-              memory: 128Mi
-          volumeMounts:
-            - name: html-template
-              mountPath: /etc/nginx/templates
-            - name: html-template
-              mountPath: /etc/nginx/conf.d/default.conf
-              subPath: default.conf
-      volumes:
-        - name: html-template
-          configMap:
-            name: service-a-app-html
+              cpu: 500m
+              memory: 512Mi

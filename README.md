@@ -7,7 +7,7 @@ A GitOps demo showing how an application version is **promoted through environme
 
 ## Concept
 
-- Every build produces an **immutable, uniquely-tagged image** (e.g. `nginx:1.27.0`,
+- Every build produces an **immutable, uniquely-tagged image** (e.g. `service-a:0.0.2`,
   or in real life a git-SHA tag like `myapp:git-a1b2c3d`).
 - **Promotion = pinning that same tag in the next environment's overlay and committing.**
   The image bits never change as they move — what you tested in dev is the exact same
@@ -17,6 +17,52 @@ A GitOps demo showing how an application version is **promoted through environme
 - You can **skip versions** (promote sha5 to stage even if dev has moved on to sha7) and
   **roll back** (pin an older tag) — both are just the same "set the tag" operation.
 
+## The services
+
+`services/service-a` and `services/service-b` are minimal Spring Boot apps (Java 21,
+Maven), each with one endpoint:
+
+```bash
+GET /   ->  {"service": "service-b", "environment": "sample-dev", "imageTag": "0.0.1"}
+```
+
+`environment` and `imageTag` come from the `ENVIRONMENT` / `IMAGE_TAG` env vars set on
+the container (see [Namespace convention](#namespace-convention) and
+[Promotion granularity](#promotion-granularity) for where those values come from).
+
+`service-a` additionally calls `service-b` over HTTP (`SERVICE_B_URL`, defaulting to
+`http://service-b` — the bare Service name resolves via cluster DNS since both apps
+share a namespace) and returns the combined result:
+
+```json
+{
+  "service": "service-a",
+  "environment": "sample-dev",
+  "imageTag": "0.0.1",
+  "serviceB": {"service": "service-b", "environment": "sample-dev", "imageTag": "0.0.1"}
+}
+```
+
+Run one locally:
+
+```bash
+cd services/service-b && mvn spring-boot:run
+# in another shell
+cd services/service-a && SERVICE_B_URL=http://localhost:8080 mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
+```
+
+Build the image each overlay's `images:` entry expects:
+
+```bash
+cd services/service-a && docker build -t service-a:0.0.1 .
+cd services/service-b && docker build -t service-b:0.0.1 .
+```
+
+These images aren't pushed to a registry — the manifests just reference
+`service-a:0.0.1` / `service-b:0.0.1` by name, so the cluster needs to already have
+them (build directly against the cluster's own container runtime, or push
+somewhere it can pull from).
+
 ## Repository layout
 
 ```
@@ -24,11 +70,11 @@ repo/
   appset/
     applicationset-service-a.yaml    # generates one Application per env (dev/stage/sandbox/prod)
   base/
-    service-a/                       # Deployment + Service (image: nginx, replicas: 1)
-    service-b/                       # Deployment + Service (image: nginx, replicas: 1)
+    service-a/                       # Deployment + Service (image: service-a, replicas: 1)
+    service-b/                       # Deployment + Service (image: service-b, replicas: 1)
     routes/                          # Istio Gateway + VirtualServices (host set per env)
   overlay/
-    dev/kustomization.yaml           # env overlay: namespace + system image tag (all apps)
+    dev/kustomization.yaml           # env overlay: namespace + per-image tags (both apps)
     stage/kustomization.yaml
     sandbox/kustomization.yaml
     prod/kustomization.yaml
@@ -39,19 +85,22 @@ repo/
     istio-ingressgateway-application.yaml  # Argo CD Application: ingress gateway, ClusterIP (sync-wave 2)
     sample-routes-ingress-application.yaml # Argo CD Application: Traefik Ingress -> gateway (sync-wave 3)
     routes/ingress.yaml              # the Traefik Ingress itself
+services/
+  service-a/                         # Spring Boot app (Java 21, Maven) -- calls service-b, returns combined JSON
+  service-b/                         # Spring Boot app (Java 21, Maven)
 scripts/
   promote.sh                         # simulate a tag promotion dev → stage → prod
 ```
 
-Each env overlay deploys the **whole "sample" system** (all apps) into one
-per-environment namespace and pins the system's image tag:
+Each env overlay deploys the **whole "sample" system** (both apps) into one
+per-environment namespace and pins each app's image tag:
 
-| Env     | Namespace       | Apps                    | Image (current) |
-|---------|-----------------|-------------------------|-----------------|
-| dev     | `sample-dev`    | service-a, service-b   | `nginx:1.27.0`  |
-| stage   | `sample-stage`  | service-a, service-b   | `nginx:1.27.0`  |
-| sandbox | `sample-sandbox`| service-a, service-b   | `nginx:1.27.0`  |
-| prod    | `sample-prod`   | service-a, service-b   | `nginx:1.27.0`  |
+| Env     | Namespace       | Apps                  | Image (current)                          |
+|---------|-----------------|------------------------|-------------------------------------------|
+| dev     | `sample-dev`    | service-a, service-b   | `service-a:0.0.1`, `service-b:0.0.1`      |
+| stage   | `sample-stage`  | service-a, service-b   | `service-a:0.0.1`, `service-b:0.0.1`      |
+| sandbox | `sample-sandbox`| service-a, service-b   | `service-a:0.0.1`, `service-b:0.0.1`      |
+| prod    | `sample-prod`   | service-a, service-b   | `service-a:0.0.1`, `service-b:0.0.1`      |
 
 ### URLs (dev, stage)
 
@@ -92,10 +141,11 @@ per-app namespace (`app-<env>`) only when apps need hard isolation from each oth
 
 ### Promotion granularity
 
-Both apps currently use the `nginx` image, so a single `images: newTag` pins the
-**whole system as a unit** (system-level promotion). To promote apps independently,
-give them distinct image names (e.g. `myorg/service-a`, `myorg/service-b`) and pin
-each separately.
+`service-a` and `service-b` are separate images (`images:` has one entry per app),
+so they *can* be promoted independently — but `scripts/promote.sh` and the CI
+workflow both still pin them to the same tag value on purpose (system-level
+promotion). To actually promote them independently, give each its own tag argument
+instead of sharing `NEW_TAG`.
 
 ## Simulating a promotion
 
@@ -104,24 +154,27 @@ resulting manifests at every hop, so you can see the diff a promotion produces.
 
 ```bash
 # Requires: kustomize
-./scripts/promote.sh 1.28.0
+./scripts/promote.sh 0.0.2
 ```
 
 It prints the starting tags, promotes dev → stage → prod, shows the rendered
 `namespace` / `replicas` / `image` for each, and ends with a `git diff --stat`
 of the overlay changes. In real Argo CD, committing those overlay changes is what
-triggers each `service-a-<env>` Application to sync.
+triggers each `service-a-<env>` Application to sync. `service-a` and `service-b`
+both get pinned to the tag you pass (see [Promotion granularity](#promotion-granularity)).
 
 Each promotion step also "pushes" to a **simulated registry** —
 `scripts/registry.txt`, gitignored — recording the real image alongside a
 per-environment, per-push tag (`dev-v1.0.0`, `dev-v1.0.1`, `stage-v1.0.0`, ...).
-The counter is derived from how many entries that env already has, so it keeps
-climbing across runs:
+The counter is derived from how many entries that env already has (one entry per
+image pushed, so a single promotion run burns two counter values per env — one for
+each app), so it keeps climbing across runs:
 
 ```
-nginx:1.28.0 dev-v1.0.0 2026-08-18T19:17:40Z
-nginx:1.28.0 stage-v1.0.0 2026-08-18T19:17:40Z
-nginx:1.28.0 prod-v1.0.0 2026-08-18T19:17:40Z
+service-a:0.0.2 dev-v1.0.0 2026-08-19T16:10:08Z
+service-b:0.0.2 dev-v1.0.1 2026-08-19T16:10:08Z
+service-a:0.0.2 stage-v1.0.0 2026-08-19T16:10:08Z
+service-b:0.0.2 stage-v1.0.1 2026-08-19T16:10:08Z
 ```
 
 Each `[registry] env=... image=... tag=...` line printed during a run, and the
@@ -191,10 +244,16 @@ the mesh.
   all four envs present.
 - [x] ~~service-b Service selector didn't match its pods~~ — fixed
   (`app: service-b-app`).
-- [ ] Independent per-app promotion — both apps share the `nginx` image, so they
-  promote as one unit. Give them distinct image names to promote separately.
+- [x] ~~Independent per-app promotion~~ — `service-a` and `service-b` are now
+  separate Spring Boot apps/images (`services/`), each with its own `images:` entry.
+  `scripts/promote.sh` still pins them to the same tag by choice; give each its own
+  tag argument to actually promote them independently.
 - [x] ~~Install Istio~~ — `repo/istio/` installs base/istiod/ingress gateway via Helm
   through Argo CD.
+- [ ] Push `service-a`/`service-b` images to a real registry — right now the
+  manifests reference `service-a:0.0.1` / `service-b:0.0.1` by name with nothing
+  pushing them anywhere, so the cluster needs the images built locally against its
+  own container runtime.
 - [ ] Enable sidecar injection on `sample-*` namespaces and add `DestinationRule` /
   `VirtualService` for canary traffic shifting (see conversation notes on
   pipeline-driven vs. Argo Rollouts canary).

@@ -9,13 +9,14 @@ resources:
 - ../../base/service-b
 - ../../base/routes
 
-# Both apps use the nginx image, so this pins the system as a unit
-# (system-level promotion). Real apps would have distinct image names
-# (e.g. myorg/service-a, myorg/service-b) to promote independently.
+# service-a and service-b are separate images now, but promote.sh still
+# pins both to the same tag value here (system-level promotion). Give
+# them independently-set tags below to promote them separately.
 images:
-- name: nginx
-  newName: nginx
-  newTag: 1.27.0
+- name: service-a
+  newTag: "0.0.1"
+- name: service-b
+  newTag: "0.0.1"
 
 # Project each Deployment's own (already-promoted) image tag into its
 # IMAGE_TAG env var, so the served page can display it without the tag

@@ -3,15 +3,21 @@
 # Each "promotion" pins the new image tag in that env's overlay (what ArgoCD
 # would then sync). We render the manifests at each hop so you can see the diff.
 #
-# Usage: scripts/promote.sh [image-tag]   (default: 1.27.0)
+# service-a and service-b are separate images, but this script still pins
+# both to the same tag value (system-level promotion, same as before they
+# were split out) -- pass two tags instead of one if you want to promote
+# them independently.
+#
+# Usage: scripts/promote.sh [image-tag]   (default: 0.0.2)
 set -euo pipefail
 
 # Resolve repo layout relative to this script (scripts/ lives next to repo/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO="$PROJECT_ROOT/repo"
-NEW_TAG="${1:-1.27.0}"
+NEW_TAG="${1:-0.0.2}"
 ENVS=(dev stage prod)
+IMAGES=(service-a service-b)
 
 # Simulated registry: a flat text file standing in for a real image registry.
 # Each promotion "pushes" the image under a per-env tag, e.g. dev-v1.0.0,
@@ -41,26 +47,28 @@ registry_push() {
   echo "    [registry] env=$env  image=$image  tag=$sim_tag"
 }
 
-echo "Promoting nginx:$NEW_TAG through: ${ENVS[*]}"
+echo "Promoting ${IMAGES[*]/%/:$NEW_TAG} through: ${ENVS[*]}"
 hr
 echo "STARTING STATE (current pinned tags):"
 for e in "${ENVS[@]}"; do
   tag=$(grep 'newTag:' "$REPO/overlay/$e/kustomization.yaml" | head -1 | awk '{print $2}' | tr -d '"')
-  printf "  %-6s -> nginx:%s\n" "$e" "$tag"
+  printf "  %-6s -> service-a:%s, service-b:%s\n" "$e" "$tag" "$tag"
 done
 hr
 
 for env in "${ENVS[@]}"; do
-  echo ">>> PROMOTE nginx:$NEW_TAG to [$env]"
-  ( cd "$REPO/overlay/$env" && kustomize edit set image "nginx=nginx:$NEW_TAG" )
-  registry_push "$env" "nginx:$NEW_TAG"
+  echo ">>> PROMOTE ${IMAGES[*]/%/:$NEW_TAG} to [$env]"
+  for image in "${IMAGES[@]}"; do
+    ( cd "$REPO/overlay/$env" && kustomize edit set image "$image=$image:$NEW_TAG" )
+    registry_push "$env" "$image:$NEW_TAG"
+  done
   echo "    rendered manifest for $env:"
   show_env "$env"
   echo "    (in real ArgoCD: commit + push -> app 'service-a-$env' auto-syncs)"
   hr
 done
 
-echo "DONE. All envs now pinned to nginx:$NEW_TAG."
+echo "DONE. All envs now pinned to ${IMAGES[*]/%/:$NEW_TAG}."
 echo "Git diff of the promotion:"
 ( cd "$PROJECT_ROOT" && git --no-pager diff --stat repo/overlay )
 hr

@@ -9,6 +9,6 @@ spec:
     app: service-a-app
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080
       protocol: TCP
   type: ClusterIP
