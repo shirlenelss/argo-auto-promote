@@ -1,4 +1,4 @@
 package com.example.servicea;
 
-public record CombinedInfo(String service, String environment, String imageTag, ServiceInfo serviceB) {
+public record CombinedInfo(String service, String environment, String imageTag, String changes, ServiceInfo serviceB) {
 }

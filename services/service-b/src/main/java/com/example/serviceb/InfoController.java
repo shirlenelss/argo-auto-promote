@@ -17,8 +17,10 @@ public class InfoController {
         this.imageTag = imageTag;
     }
 
+    private static final String CHANGES = "Added JSON pretty-printing to the response body";
+
     @GetMapping("/")
     public ServiceInfo info() {
-        return new ServiceInfo("service-b", environment, imageTag);
+        return new ServiceInfo("service-b", environment, imageTag, CHANGES);
     }
 }

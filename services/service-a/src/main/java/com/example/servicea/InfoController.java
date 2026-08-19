@@ -21,9 +21,11 @@ public class InfoController {
         this.serviceBClient = RestClient.create(serviceBUrl);
     }
 
+    private static final String CHANGES = "Calls service-b and returns its response combined with its own";
+
     @GetMapping("/")
     public CombinedInfo info() {
         ServiceInfo serviceB = serviceBClient.get().retrieve().body(ServiceInfo.class);
-        return new CombinedInfo("service-a", environment, imageTag, serviceB);
+        return new CombinedInfo("service-a", environment, imageTag, CHANGES, serviceB);
     }
 }

@@ -1,4 +1,4 @@
 package com.example.serviceb;
 
-public record ServiceInfo(String service, String environment, String imageTag) {
+public record ServiceInfo(String service, String environment, String imageTag, String changes) {
 }
