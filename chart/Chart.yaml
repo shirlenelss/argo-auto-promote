@@ -1,0 +1,9 @@
+apiVersion: v2
+name: service
+description: >-
+  Generic chart for one microservice in the "sample" system (Deployment,
+  Service, and optionally a VirtualService + Ingress for external access).
+  Every service (service-a, service-b, ...) shares this one chart --
+  what differs per service/env lives in services/<name>/<env>.yaml.
+type: application
+version: 0.1.0

@@ -1,3 +1,4 @@
 .idea/
 scripts/registry.txt
 services/*/target/
+.env

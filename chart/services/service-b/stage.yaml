@@ -1,0 +1,7 @@
+name: service-b
+image:
+  repository: service-b
+  tag: "0.0.1"
+route:
+  enabled: true
+  env: stage

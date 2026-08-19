@@ -1,9 +1,12 @@
-# The Traefik Ingress that fronts istio-ingressgateway (repo/istio/routes/).
-# Needs the gateway's Service to exist first, so it syncs last (sync-wave 3).
+# The shared Gateway (repo/istio/gateway/) every service's VirtualService
+# routes through. Needs istio-ingressgateway's Service to exist first, so
+# it syncs last (sync-wave 3). Per-service VirtualServices/Ingresses are no
+# longer deployed here -- they're templated by chart/ per (service, env)
+# Application instead (see repo/appset/applicationset-services.yaml).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sample-routes-ingress
+  name: sample-gateway
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
@@ -12,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/shirlenelss/argo-auto-promote.git
     targetRevision: main
-    path: repo/istio/routes
+    path: repo/istio/gateway
   destination:
     server: https://kubernetes.default.svc
     namespace: istio-system

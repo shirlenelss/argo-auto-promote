@@ -1,0 +1,49 @@
+# One Application per (service, env) pair -- true independent promotion,
+# since each syncs from its own values file (chart/services/<service>/<env>.yaml)
+# and nothing ties one service's tag to another's.
+#
+# Adding service #3 (or #30): add its services/<name>/*.yaml files and one
+# line to the service list below. Nothing else in this repo changes.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services
+  namespace: argocd
+spec:
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - service: service-a
+                - service: service-b
+          - list:
+              elements:
+                - env: dev
+                - env: stage
+                - env: sandbox
+                - env: prod
+  template:
+    metadata:
+      name: "{{service}}-{{env}}"
+      namespace: argocd
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/shirlenelss/argo-auto-promote.git
+        targetRevision: main
+        path: chart
+        helm:
+          valueFiles:
+            - services/{{service}}/{{env}}.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "sample-{{env}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

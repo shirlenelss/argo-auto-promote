@@ -1,0 +1,31 @@
+{{- if .Values.route.enabled }}
+# Explicitly namespaced to istio-system, not this release's destination
+# namespace: a core Ingress's backend service must live in the same
+# namespace as the Ingress itself, and istio-ingressgateway lives in
+# istio-system. Traefik (this cluster's ingress controller) merges rules
+# from every Ingress matching its class, so one small Ingress per
+# service/env here is equivalent to -- and replaces -- the single
+# hand-maintained multi-rule Ingress the old setup used.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # Unlike the VirtualService (namespaced per env, so "service-a" alone
+  # is unique), every env's Ingress lands in the same istio-system
+  # namespace -- so the name must include the env too, or service-a-dev
+  # and service-a-stage's Applications would collide over one object.
+  name: {{ .Values.name }}-{{ .Values.route.env }}
+  namespace: istio-system
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: {{ .Values.name }}-{{ .Values.route.env }}.apps.shirlenelim.se
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: istio-ingressgateway
+                port:
+                  number: 80
+{{- end }}

@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}-app
+  labels:
+    app: {{ .Values.name }}-app
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}-app
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}-app
+    spec:
+      containers:
+        - name: {{ .Values.name }}-app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.port }}
+          env:
+            - name: ENVIRONMENT
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            # Same source as the image field above -- no separate
+            # "read the tag back off myself" trick needed, unlike the
+            # Kustomize `replacements:` version this chart replaces.
+            - name: IMAGE_TAG
+              value: "{{ .Values.image.tag }}"
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

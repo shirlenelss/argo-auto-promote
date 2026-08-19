@@ -1,0 +1,32 @@
+# Defaults shared by every service. A service's own values file
+# (services/<name>/<env>.yaml) only needs to set what's specific to it:
+# name, image, and env -- everything below is a sane fallback.
+
+name: ""
+
+image:
+  repository: ""
+  tag: ""
+
+port: 8080
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Extra env vars beyond the always-present ENVIRONMENT/IMAGE_TAG, e.g.
+# SERVICE_B_URL for service-a. Empty map by default.
+env: {}
+
+# External URL via Istio + Traefik. Off by default -- sandbox/prod don't
+# get one, matching today's setup. env must be set (dev/stage/...) when
+# enabled, since it's part of the hostname.
+route:
+  enabled: false
+  env: ""

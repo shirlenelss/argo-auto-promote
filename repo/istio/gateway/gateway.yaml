@@ -1,0 +1,20 @@
+# Shared HTTP gateway for every service, bound to istio-ingressgateway.
+# Lives once in istio-system (not per env like the old per-overlay
+# Gateway did) so every service's VirtualService -- in whichever
+# sample-<env> namespace -- can reference it via
+# "istio-system/sample-gateway", regardless of which env it's in.
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: sample-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"

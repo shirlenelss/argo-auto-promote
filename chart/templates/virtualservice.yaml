@@ -1,0 +1,23 @@
+{{- if .Values.route.enabled }}
+# hosts carry both a nip.io host (no real DNS needed -- resolves against
+# istio-ingressgateway's ClusterIP via kubectl port-forward) and a real
+# host on the shared apps.shirlenelim.se wildcard. gateways references
+# the Gateway by <namespace>/<name> since it lives once in istio-system
+# (repo/istio/gateway/), not per env like it used to.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Values.name }}
+spec:
+  hosts:
+    - {{ .Values.name }}.{{ .Values.route.env }}.127.0.0.1.nip.io
+    - {{ .Values.name }}-{{ .Values.route.env }}.apps.shirlenelim.se
+  gateways:
+    - istio-system/sample-gateway
+  http:
+    - route:
+        - destination:
+            host: {{ .Values.name }}
+            port:
+              number: 80
+{{- end }}

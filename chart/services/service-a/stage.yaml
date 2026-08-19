@@ -1,0 +1,9 @@
+name: service-a
+image:
+  repository: service-a
+  tag: "0.0.1"
+env:
+  SERVICE_B_URL: http://service-b
+route:
+  enabled: true
+  env: stage

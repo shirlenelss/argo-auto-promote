@@ -1,0 +1,4 @@
+name: service-b
+image:
+  repository: service-b
+  tag: "PROD-v1.0.0"
