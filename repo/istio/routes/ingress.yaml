@@ -10,7 +10,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: sample-app-dev.apps.shirlenelim.se
+    - host: service-a-dev.apps.shirlenelim.se
       http:
         paths:
           - path: /
@@ -30,7 +30,7 @@ spec:
                 name: istio-ingressgateway
                 port:
                   number: 80
-    - host: sample-app-stage.apps.shirlenelim.se
+    - host: service-a-stage.apps.shirlenelim.se
       http:
         paths:
           - path: /

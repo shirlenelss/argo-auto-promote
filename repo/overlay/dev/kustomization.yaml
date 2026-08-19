@@ -5,13 +5,13 @@ kind: Kustomization
 namespace: sample-dev
 
 resources:
-- ../../base/sample-app
+- ../../base/service-a
 - ../../base/service-b
 - ../../base/routes
 
 # Both apps use the nginx image, so this pins the system as a unit
 # (system-level promotion). Real apps would have distinct image names
-# (e.g. myorg/sample-app, myorg/service-b) to promote independently.
+# (e.g. myorg/service-a, myorg/service-b) to promote independently.
 images:
 - name: nginx
   newName: nginx
@@ -23,18 +23,18 @@ images:
 # `images:` above -- it reads the post-image-transform value.
 replacements:
 - source:
-    fieldPath: spec.template.spec.containers.[name=sample-app].image
+    fieldPath: spec.template.spec.containers.[name=service-a-app].image
     kind: Deployment
-    name: sample-app
+    name: service-a-app
     options:
       delimiter: ':'
       index: 1
   targets:
   - fieldPaths:
-    - spec.template.spec.containers.[name=sample-app].env.[name=IMAGE_TAG].value
+    - spec.template.spec.containers.[name=service-a-app].env.[name=IMAGE_TAG].value
     select:
       kind: Deployment
-      name: sample-app
+      name: service-a-app
 - source:
     fieldPath: spec.template.spec.containers.[name=service-b-app].image
     kind: Deployment
@@ -57,13 +57,13 @@ patches:
 - patch: |-
     - op: replace
       path: /spec/hosts/0
-      value: sample-app.dev.127.0.0.1.nip.io
+      value: service-a.dev.127.0.0.1.nip.io
     - op: add
       path: /spec/hosts/-
-      value: sample-app-dev.apps.shirlenelim.se
+      value: service-a-dev.apps.shirlenelim.se
   target:
     kind: VirtualService
-    name: sample-app
+    name: service-a
 - patch: |-
     - op: replace
       path: /spec/hosts/0

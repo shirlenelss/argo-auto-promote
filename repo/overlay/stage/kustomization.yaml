@@ -5,7 +5,7 @@ kind: Kustomization
 namespace: sample-stage
 
 resources:
-  - ../../base/sample-app
+  - ../../base/service-a
   - ../../base/service-b
   - ../../base/routes
 
@@ -20,17 +20,17 @@ images:
 replacements:
   - source:
       kind: Deployment
-      name: sample-app
-      fieldPath: spec.template.spec.containers.[name=sample-app].image
+      name: service-a-app
+      fieldPath: spec.template.spec.containers.[name=service-a-app].image
       options:
         delimiter: ":"
         index: 1
     targets:
       - select:
           kind: Deployment
-          name: sample-app
+          name: service-a-app
         fieldPaths:
-          - spec.template.spec.containers.[name=sample-app].env.[name=IMAGE_TAG].value
+          - spec.template.spec.containers.[name=service-a-app].env.[name=IMAGE_TAG].value
   - source:
       kind: Deployment
       name: service-b-app
@@ -52,14 +52,14 @@ replacements:
 patches:
   - target:
       kind: VirtualService
-      name: sample-app
+      name: service-a
     patch: |-
       - op: replace
         path: /spec/hosts/0
-        value: sample-app.stage.127.0.0.1.nip.io
+        value: service-a.stage.127.0.0.1.nip.io
       - op: add
         path: /spec/hosts/-
-        value: sample-app-stage.apps.shirlenelim.se
+        value: service-a-stage.apps.shirlenelim.se
   - target:
       kind: VirtualService
       name: service-b

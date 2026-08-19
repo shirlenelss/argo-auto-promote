@@ -22,9 +22,9 @@ A GitOps demo showing how an application version is **promoted through environme
 ```
 repo/
   appset/
-    applicationset-sample-app.yaml   # generates one Application per env (dev/stage/sandbox/prod)
+    applicationset-service-a.yaml    # generates one Application per env (dev/stage/sandbox/prod)
   base/
-    sample-app/                      # Deployment + Service (image: nginx, replicas: 1)
+    service-a/                       # Deployment + Service (image: nginx, replicas: 1)
     service-b/                       # Deployment + Service (image: nginx, replicas: 1)
     routes/                          # Istio Gateway + VirtualServices (host set per env)
   overlay/
@@ -48,10 +48,10 @@ per-environment namespace and pins the system's image tag:
 
 | Env     | Namespace       | Apps                    | Image (current) |
 |---------|-----------------|-------------------------|-----------------|
-| dev     | `sample-dev`    | sample-app, service-b   | `nginx:1.27.0`  |
-| stage   | `sample-stage`  | sample-app, service-b   | `nginx:1.27.0`  |
-| sandbox | `sample-sandbox`| sample-app, service-b   | `nginx:1.27.0`  |
-| prod    | `sample-prod`   | sample-app, service-b   | `nginx:1.27.0`  |
+| dev     | `sample-dev`    | service-a, service-b   | `nginx:1.27.0`  |
+| stage   | `sample-stage`  | service-a, service-b   | `nginx:1.27.0`  |
+| sandbox | `sample-sandbox`| service-a, service-b   | `nginx:1.27.0`  |
+| prod    | `sample-prod`   | service-a, service-b   | `nginx:1.27.0`  |
 
 ### URLs (dev, stage)
 
@@ -63,10 +63,10 @@ app), and each `VirtualService` carries two hosts:
   bypassing Traefik;
 - a **real** host on the shared `apps.shirlenelim.se` wildcard — `<app>-<env>.apps.shirlenelim.se`.
 
-| Env   | sample-app | service-b |
+| Env   | service-a | service-b |
 |-------|------------|-----------|
-| dev   | `sample-app.dev.127.0.0.1.nip.io`<br>`sample-app-dev.apps.shirlenelim.se` | `service-b.dev.127.0.0.1.nip.io`<br>`service-b-dev.apps.shirlenelim.se` |
-| stage | `sample-app.stage.127.0.0.1.nip.io`<br>`sample-app-stage.apps.shirlenelim.se` | `service-b.stage.127.0.0.1.nip.io`<br>`service-b-stage.apps.shirlenelim.se` |
+| dev   | `service-a.dev.127.0.0.1.nip.io`<br>`service-a-dev.apps.shirlenelim.se` | `service-b.dev.127.0.0.1.nip.io`<br>`service-b-dev.apps.shirlenelim.se` |
+| stage | `service-a.stage.127.0.0.1.nip.io`<br>`service-a-stage.apps.shirlenelim.se` | `service-b.stage.127.0.0.1.nip.io`<br>`service-b-stage.apps.shirlenelim.se` |
 
 **How the real hosts reach an app:** this cluster already runs Traefik as its
 ingress controller (Rancher Desktop's default, also fronting other workloads like
@@ -94,7 +94,7 @@ per-app namespace (`app-<env>`) only when apps need hard isolation from each oth
 
 Both apps currently use the `nginx` image, so a single `images: newTag` pins the
 **whole system as a unit** (system-level promotion). To promote apps independently,
-give them distinct image names (e.g. `myorg/sample-app`, `myorg/service-b`) and pin
+give them distinct image names (e.g. `myorg/service-a`, `myorg/service-b`) and pin
 each separately.
 
 ## Simulating a promotion
@@ -110,7 +110,7 @@ resulting manifests at every hop, so you can see the diff a promotion produces.
 It prints the starting tags, promotes dev → stage → prod, shows the rendered
 `namespace` / `replicas` / `image` for each, and ends with a `git diff --stat`
 of the overlay changes. In real Argo CD, committing those overlay changes is what
-triggers each `sample-app-<env>` Application to sync.
+triggers each `service-a-<env>` Application to sync.
 
 Each promotion step also "pushes" to a **simulated registry** —
 `scripts/registry.txt`, gitignored — recording the real image alongside a
@@ -158,9 +158,9 @@ GitHub Environment protection rule to `prod` to require a reviewer.
 
 `repo/istio/` has three Argo CD `Application` manifests that install Istio from the
 **official Istio Helm charts** (`https://istio-release.storage.googleapis.com/charts`)
-directly — no chart code is vendored into this repo. Unlike the sample app, Istio is
-cluster-wide infrastructure, so these apps are not per-environment and all land in
-`istio-system`:
+directly — no chart code is vendored into this repo. Unlike `service-a`/`service-b`,
+Istio is cluster-wide infrastructure, so these apps are not per-environment and all
+land in `istio-system`:
 
 | Application             | Chart  | Sync-wave |
 |--------------------------|--------|-----------|

@@ -3,5 +3,5 @@ kind: Kustomization
 
 resources:
   - gateway.yaml
-  - virtualservice-sample-app.yaml
+  - virtualservice-service-a.yaml
   - virtualservice-service-b.yaml

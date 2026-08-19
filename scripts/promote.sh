@@ -56,7 +56,7 @@ for env in "${ENVS[@]}"; do
   registry_push "$env" "nginx:$NEW_TAG"
   echo "    rendered manifest for $env:"
   show_env "$env"
-  echo "    (in real ArgoCD: commit + push -> app 'sample-app-$env' auto-syncs)"
+  echo "    (in real ArgoCD: commit + push -> app 'service-a-$env' auto-syncs)"
   hr
 done
 

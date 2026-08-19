@@ -5,7 +5,7 @@ kind: Kustomization
 namespace: sample-prod
 
 resources:
-  - ../../base/sample-app
+  - ../../base/service-a
   - ../../base/service-b
 
 images:
@@ -19,17 +19,17 @@ images:
 replacements:
   - source:
       kind: Deployment
-      name: sample-app
-      fieldPath: spec.template.spec.containers.[name=sample-app].image
+      name: service-a-app
+      fieldPath: spec.template.spec.containers.[name=service-a-app].image
       options:
         delimiter: ":"
         index: 1
     targets:
       - select:
           kind: Deployment
-          name: sample-app
+          name: service-a-app
         fieldPaths:
-          - spec.template.spec.containers.[name=sample-app].env.[name=IMAGE_TAG].value
+          - spec.template.spec.containers.[name=service-a-app].env.[name=IMAGE_TAG].value
   - source:
       kind: Deployment
       name: service-b-app

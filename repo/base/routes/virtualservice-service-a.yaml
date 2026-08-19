@@ -2,15 +2,15 @@
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
-  name: sample-app
+  name: service-a
 spec:
   hosts:
-    - sample-app.PLACEHOLDER
+    - service-a.PLACEHOLDER
   gateways:
     - sample-gateway
   http:
     - route:
         - destination:
-            host: sample-app
+            host: service-a
             port:
               number: 80
